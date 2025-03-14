@@ -1,37 +1,44 @@
 #pragma once
-
+#include "effects.h"
 #include "daisysp.h"
+#include "config_loader.h"
 #include <vector>
-
-using namespace daisysp;
 
 class SynthEngine
 {
 public:
-    SynthEngine(float sample_rate, int max_voices = 8);
+    SynthEngine(float sample_rate, int max_voices = 8, const std::string &config_file = "config.yml");
 
-    void SetWaveform(int waveform); // Set waveform type
-    void NoteOn(float freq);        // Trigger a note
-    void NoteOff(float freq);       // Stop a note
-    void InitEnvelopes();
-    float Process();                // Generate audio sample
 
+    void SetWaveform(int waveform);
+    void NoteOn(float freq);
+    void NoteOff(float freq);
+    float Process();
+
+    void SetDelayTime(float time);
+    void SetDelayFeedback(float feedback);
+    void SetOverdrive(float amount);
+    void ReloadConfig();
 
 private:
+    void InitEnvelopes(); // ✅ Declare InitEnvelopes here
+
     struct Voice
     {
         Oscillator osc;
-        Adsr env; 
-        float freq = 0.0f; 
+        Adsr env;
+        float freq = 0.0f;
         bool active = false;
-        bool gate = false; 
-
+        bool gate = false;
     };
-
 
     float sample_rate_;
     std::vector<Voice> voices_;
     int max_voices_;
     int current_waveform_ = Oscillator::WAVE_SIN;
+
+    EffectProcessor effects_;
+    ConfigLoader config_;
+
 };
 

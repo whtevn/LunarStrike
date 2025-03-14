@@ -1,3 +1,6 @@
 [submodule "lib/DaisySP"]
 	path = lib/DaisySP
 	url = https://github.com/electro-smith/DaisySP.git
+[submodule "lib/yaml-cpp"]
+	path = lib/yaml-cpp
+	url = https://github.com/jbeder/yaml-cpp.git

@@ -1,17 +1,43 @@
 #include "synth_engine.h"
+#include <iostream>
 
-SynthEngine::SynthEngine(float sample_rate, int max_voices)
-    : sample_rate_(sample_rate), max_voices_(max_voices)
+
+SynthEngine::SynthEngine(float sample_rate, int max_voices, const std::string &config_file)
+    : sample_rate_(sample_rate), max_voices_(max_voices), config_(config_file), effects_(sample_rate)
 {
-    voices_.resize(max_voices_); // Ensure voices_ is properly initialized
+    voices_.resize(max_voices_);
     for (auto &voice : voices_)
     {
         voice.osc.Init(sample_rate_);
-        voice.osc.SetWaveform(current_waveform_);
         voice.active = false;
     }
-    InitEnvelopes(); // Now safe to call!
+
+    ReloadConfig(); // Load settings at startup
 }
+
+
+void SynthEngine::ReloadConfig()
+{
+    config_.Load();
+
+    // Apply ADSR settings
+    for (auto &voice : voices_)
+    {
+        voice.env.SetTime(ADSR_SEG_ATTACK, config_.GetADSR("attack"));
+        voice.env.SetTime(ADSR_SEG_DECAY, config_.GetADSR("decay"));
+        voice.env.SetSustainLevel(config_.GetADSR("sustain"));
+        voice.env.SetTime(ADSR_SEG_RELEASE, config_.GetADSR("release"));
+    }
+
+    // Apply effect settings
+    effects_.SetDelayTime(config_.GetEffect("delay_time"));
+    effects_.SetDelayFeedback(config_.GetEffect("delay_feedback"));
+    effects_.SetOverdrive(config_.GetEffect("overdrive"));
+
+    std::cout << "Config reloaded!" << std::endl;
+}
+
+
 
 
 void SynthEngine::InitEnvelopes()
@@ -72,18 +98,31 @@ float SynthEngine::Process()
         if (voice.active)
         {
             float amp = voice.env.Process(voice.gate);
-
             output += voice.osc.Process() * amp;
-
-            if (!voice.env.IsRunning()) // Envelope has fully released
-            {
-                voice.active = false; // Deactivate the voice
-                voice.freq = 0.0f; // Reset frequency
-            }
         }
     }
-    return output / max_voices_;
+
+    return effects_.Process(output); // Apply effects after synthesis
 }
+
+
+// Implement missing functions
+void SynthEngine::SetDelayTime(float time)
+{
+    effects_.SetDelayTime(time);
+}
+
+void SynthEngine::SetDelayFeedback(float feedback)
+{
+    effects_.SetDelayFeedback(feedback);
+}
+
+void SynthEngine::SetOverdrive(float amount)
+{
+    effects_.SetOverdrive(amount);
+}
+
+
 
 
 

@@ -1,0 +1,11 @@
+adsr:
+  attack: 0.05
+  decay: 0.1
+  sustain: 0.7
+  release: 0.2
+
+effects:
+  delay_time: 0.5
+  delay_feedback: 0.5
+  overdrive: 0.3
+
