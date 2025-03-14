@@ -1,0 +1,26 @@
+# Ignore build artifacts
+/build/
+/bin/
+
+# Ignore compiled object files
+*.o
+*.a
+*.so
+*.dylib
+*.exe
+
+# Ignore logs and temporary files
+*.log
+*.tmp
+*.swp
+
+# Ignore MacOS-specific files
+.DS_Store
+
+# Ignore SoX output files
+output.raw
+output.wav
+
+# Ignore dependency build artifacts (DaisySP)
+lib/DaisySP/build/
+
