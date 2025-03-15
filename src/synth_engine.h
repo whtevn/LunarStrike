@@ -10,6 +10,9 @@ public:
     SynthEngine(float sample_rate, int max_voices = 8, const std::string &config_file = "config.yml");
 
 
+    void ProcessMidiNoteOn(int note, int velocity);
+    void ProcessMidiNoteOff(int note);
+
     void SetWaveform(int waveform);
     void NoteOn(float freq);
     void NoteOff(float freq);

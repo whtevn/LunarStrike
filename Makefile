@@ -10,6 +10,13 @@ INCLUDE_DIR := include
 CXX := clang++
 CXXFLAGS := -std=c++17 -I$(DAISY_PATH)/Source -I$(INCLUDE_DIR) -I$(YAML_PATH)/include
 LDFLAGS := -L$(DAISY_PATH)/build -L$(YAML_PATH)/build -lyaml-cpp -ldaisysp
+MIDI_PATH := lib/rtmidi
+
+CXXFLAGS += -I$(MIDI_PATH)
+LDFLAGS += $(MIDI_PATH)/build/librtmidi.a -framework CoreMIDI -framework CoreAudio -framework CoreFoundation
+
+
+
 
 # Files
 TARGET := $(BIN_DIR)/my_synth
@@ -46,3 +53,8 @@ build-yaml:
 	mkdir -p $(YAML_PATH)/build
 	cd $(YAML_PATH) && cmake -B build && cmake --build build
 
+# Build RtMidi separately
+.PHONY: build-midi
+build-midi:
+	mkdir -p $(MIDI_PATH)/build
+	cd $(MIDI_PATH) && cmake -B build && cmake --build build

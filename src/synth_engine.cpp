@@ -1,6 +1,6 @@
 #include "synth_engine.h"
 #include <iostream>
-
+#include <cmath>
 
 SynthEngine::SynthEngine(float sample_rate, int max_voices, const std::string &config_file)
     : sample_rate_(sample_rate), max_voices_(max_voices), config_(config_file), effects_(sample_rate)
@@ -9,12 +9,10 @@ SynthEngine::SynthEngine(float sample_rate, int max_voices, const std::string &c
     for (auto &voice : voices_)
     {
         voice.osc.Init(sample_rate_);
-        voice.active = false;
     }
 
     ReloadConfig(); // Load settings at startup
 }
-
 
 void SynthEngine::ReloadConfig()
 {
@@ -37,22 +35,6 @@ void SynthEngine::ReloadConfig()
     std::cout << "Config reloaded!" << std::endl;
 }
 
-
-
-
-void SynthEngine::InitEnvelopes()
-{
-    for (auto &voice : voices_)
-    {
-        voice.env.Init(sample_rate_);
-        voice.env.SetTime(ADSR_SEG_ATTACK, 0.0f);  // Attack: 100ms
-        voice.env.SetTime(ADSR_SEG_DECAY, 0.1f);   // Decay: 100ms
-        voice.env.SetSustainLevel(0.7f);           // Sustain: 70%
-        voice.env.SetTime(ADSR_SEG_RELEASE, 0.2f); // Release: 200ms
-    }
-}
-
-
 void SynthEngine::SetWaveform(int waveform)
 {
     current_waveform_ = waveform;
@@ -61,52 +43,92 @@ void SynthEngine::SetWaveform(int waveform)
         voice.osc.SetWaveform(waveform);
     }
 }
-void SynthEngine::NoteOn(float freq)
-{
-    for (auto &voice : voices_)
-    {
-        if (!voice.active)
-        {
-            voice.osc.SetFreq(freq);
-            voice.freq = freq;
-            voice.active = true;
-            voice.gate = true;
-            voice.env.Retrigger(true); // Pass `true` for hard retrigger
-
-            return;
-        }
-    }
-}
-
-void SynthEngine::NoteOff(float freq)
-{
-    for (auto &voice : voices_)
-    {
-        if (voice.active && voice.freq == freq)
-        {
-            voice.gate = false;
-            return;
-        }
-    }
-}
 
 float SynthEngine::Process()
 {
-    float output = 0.0f;
+    float mix = 0.0f;
     for (auto &voice : voices_)
     {
-        if (voice.active)
+        float amp = voice.env.Process(voice.gate);
+
+        // ✅ If the envelope has finished, fully release the voice
+        if (!voice.env.IsRunning())
         {
-            float amp = voice.env.Process(voice.gate);
-            output += voice.osc.Process() * amp;
+            voice.freq = 0.0f;  // ✅ Mark this voice as available
+            voice.gate = false; // ✅ Ensure it's fully off
         }
+
+        mix += voice.osc.Process() * amp;
     }
 
-    return effects_.Process(output); // Apply effects after synthesis
+    return effects_.Process(mix);
 }
 
 
-// Implement missing functions
+void SynthEngine::ProcessMidiNoteOn(int note, int velocity)
+{
+    float freq = 440.0f * pow(2.0f, (note - 69) / 12.0f);
+    float velocity_scaled = velocity / 127.0f;
+
+    std::cout << "SynthEngine: Note On - " << note << " (Freq: " << freq << " Hz, Velocity: " << velocity_scaled << ")\n";
+
+    // 1️⃣ **Find a completely free voice**
+    for (auto &voice : voices_)
+    {
+        if (voice.freq == 0.0f)  // ✅ This voice is available
+        {
+            voice.osc.SetFreq(freq);
+            voice.freq = freq;
+            voice.gate = true;
+            voice.env.Retrigger(true);
+            std::cout << "ACTIVATE (New Voice)\n";
+            return;
+        }
+    }
+
+    // 2️⃣ **No free voices—steal the quietest**
+    Voice* quietest_voice = nullptr;
+    float min_amp = 1.0f;
+
+    for (auto &voice : voices_)
+    {
+        float amp = voice.env.Process(voice.gate);
+        if (amp < min_amp)
+        {
+            min_amp = amp;
+            quietest_voice = &voice;
+        }
+    }
+
+    if (quietest_voice)
+    {
+        std::cout << "No free voices! Stealing the quietest voice.\n";
+        quietest_voice->osc.SetFreq(freq);
+        quietest_voice->freq = freq;
+        quietest_voice->gate = true;
+        quietest_voice->env.Retrigger(true);
+    }
+}
+
+
+void SynthEngine::ProcessMidiNoteOff(int note)
+{
+    float freq = 440.0f * pow(2.0f, (note - 69) / 12.0f);
+    std::cout << "SynthEngine: Note Off - " << note << " (Freq: " << freq << " Hz)\n";
+
+    for (auto &voice : voices_)
+    {
+        if (voice.freq == freq)
+        {
+            voice.gate = false;  // ✅ ADSR handles release
+            std::cout << "Release Triggered for " << freq << " Hz\n";
+            return;
+        }
+    }
+}
+
+
+
 void SynthEngine::SetDelayTime(float time)
 {
     effects_.SetDelayTime(time);
@@ -121,8 +143,4 @@ void SynthEngine::SetOverdrive(float amount)
 {
     effects_.SetOverdrive(amount);
 }
-
-
-
-
 
