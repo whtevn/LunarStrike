@@ -1,70 +1,75 @@
 #include "RtMidi.h"
 #include "synth_engine.h"
+#include "portaudio_output.h"
 #include <iostream>
 #include <thread>
 #include <atomic>
+#include "midi_handler.h"
 
 std::atomic<bool> running(true);
 
-void MidiCallback(double deltatime, std::vector<unsigned char> *message, void *userData)
+// MIDI Setup (Allows user to select a MIDI device)
+void SetupMidi(SynthEngine &synth, RtMidiIn &midiIn)
 {
-    SynthEngine *synth = static_cast<SynthEngine *>(userData);
-
-    if (message->size() < 2) return; // Ignore malformed messages
-
-    unsigned char status = message->at(0);
-    unsigned char data1 = message->at(1);
-    unsigned char data2 = (message->size() > 2) ? message->at(2) : 0;
-
-    if ((status & 0xF0) == 0x90 && data2 > 0) // Note On
-    {
-        synth->ProcessMidiNoteOn(data1, data2);
-    }
-    else if ((status & 0xF0) == 0x80 || ((status & 0xF0) == 0x90 && data2 == 0)) // Note Off
-    {
-        synth->ProcessMidiNoteOff(data1);
-    }
-}
-
-void SetupMidi(SynthEngine &synth)
-{
-    RtMidiIn midiIn;
-
-    if (midiIn.getPortCount() == 0)
+    unsigned int numPorts = midiIn.getPortCount();
+    if (numPorts == 0)
     {
         std::cerr << "No MIDI devices found." << std::endl;
         return;
     }
 
-    std::cout << "Opening MIDI device: " << midiIn.getPortName(0) << std::endl;
-    midiIn.openPort(0);
-    midiIn.setCallback(&MidiCallback, &synth);
-    midiIn.ignoreTypes(false, false, true);
-
-    while (running)
+    std::cout << "Available MIDI Devices:\n";
+    for (unsigned int i = 0; i < numPorts; i++)
     {
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        std::cout << i << ": " << midiIn.getPortName(i) << std::endl;
     }
 
-    midiIn.closePort();
+    int deviceID = 0;
+    std::cout << "Select MIDI device ID (default 0): ";
+    std::cin >> deviceID;
+    if (deviceID >= numPorts) deviceID = 0;
+
+    std::cout << "Opening MIDI device: " << midiIn.getPortName(deviceID) << std::endl;
+    midiIn.openPort(deviceID);
+    midiIn.setCallback(&MidiCallback, &synth);
+    midiIn.ignoreTypes(false, false, true);
 }
 
+// Main Loop (Handles Audio and MIDI Together)
 int main(int argc, char *argv[])
 {
     std::string config_file = (argc > 1) ? argv[1] : "config.yml";
-    SynthEngine synth(44100.0f, 8, config_file);
+    SynthEngine synth;
+    synth.Init(44100.0f);
 
-    std::thread midiThread(SetupMidi, std::ref(synth));
+    RtMidiIn midiIn;
+
+    // ✅ Run MIDI handling in a separate thread
+    std::thread midiThread([&]() { SetupMidi(synth, midiIn); });
+
+    // ✅ Run PortAudio in the main thread
+    StartAudio(&synth);
 
     std::cout << "MIDI synth ready! Press 'q' to quit.\n";
 
+    // Wait for user input
     while (running)
     {
-        char ch = getchar();
-        if (ch == 'q') running = false;
+        if (std::cin.get() == 'q')
+        {
+            std::cout << "quitting...\n";
+            running = false;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
 
+    // Clean up
+    midiIn.closePort();
+    StopAudio();  // Ensure PortAudio stops
     midiThread.join();
+
+    std::cout << "Exiting cleanly.\n";
     return 0;
 }
+
 

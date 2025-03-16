@@ -1,27 +1,43 @@
-# Project paths
+# Compiler settings
+CXX := clang++
+CXXFLAGS := -std=c++17
+CXXFLAGS += -I$(INCLUDE_DIR)
+CXXFLAGS += -I$(YAML_PATH)/include
+CXXFLAGS += -I$(MIDI_PATH)
+CXXFLAGS += -I$(DAISY_PATH)/Source  # Ensure DaisySP include path is correct
+
+
+# DaisySP Paths
 DAISY_PATH := lib/DaisySP
+CXXFLAGS += -I$(DAISY_PATH)/Source
+LDFLAGS_DAISY := -L$(DAISY_PATH)/build -ldaisysp
+
+# YAML Paths
 YAML_PATH := lib/yaml-cpp
+LDFLAGS_YAML := -L$(YAML_PATH)/build -lyaml-cpp
+
+# RtMidi Paths
+MIDI_PATH := lib/rtmidi
+CXXFLAGS += -I$(MIDI_PATH)
+LDFLAGS_MIDI := $(MIDI_PATH)/build/librtmidi.a
+
+# macOS-specific frameworks
+LDFLAGS_MAC := -framework CoreMIDI -framework CoreAudio -framework CoreFoundation
+
+# PortAudio & PortMIDI Paths
+CXXFLAGS += -I/usr/local/include -I/opt/homebrew/include
+LDFLAGS_AUDIO := -L/usr/local/lib -L/opt/homebrew/lib -lportaudio -lportmidi -lpthread
+
+# Files
 SRC_DIR := src
 BUILD_DIR := build
 BIN_DIR := bin
-INCLUDE_DIR := include
-
-# Compiler settings
-CXX := clang++
-CXXFLAGS := -std=c++17 -I$(DAISY_PATH)/Source -I$(INCLUDE_DIR) -I$(YAML_PATH)/include
-LDFLAGS := -L$(DAISY_PATH)/build -L$(YAML_PATH)/build -lyaml-cpp -ldaisysp
-MIDI_PATH := lib/rtmidi
-
-CXXFLAGS += -I$(MIDI_PATH)
-LDFLAGS += $(MIDI_PATH)/build/librtmidi.a -framework CoreMIDI -framework CoreAudio -framework CoreFoundation
-
-
-
-
-# Files
 TARGET := $(BIN_DIR)/my_synth
 SRC := $(wildcard $(SRC_DIR)/*.cpp)
 OBJ := $(patsubst $(SRC_DIR)/%.cpp, $(BUILD_DIR)/%.o, $(SRC))
+
+# Combined LDFLAGS
+LDFLAGS := $(LDFLAGS_DAISY) $(LDFLAGS_YAML) $(LDFLAGS_MIDI) $(LDFLAGS_AUDIO) $(LDFLAGS_MAC)
 
 # Build rules
 all: $(TARGET)
@@ -58,3 +74,10 @@ build-yaml:
 build-midi:
 	mkdir -p $(MIDI_PATH)/build
 	cd $(MIDI_PATH) && cmake -B build && cmake --build build
+
+# Build DaisySP separately
+.PHONY: build-daisy
+build-daisy:
+	mkdir -p $(DAISY_PATH)/build
+	cd $(DAISY_PATH) && cmake -B build && cmake --build build
+
