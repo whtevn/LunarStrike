@@ -6,6 +6,11 @@ CXXFLAGS += -I$(YAML_PATH)/include
 CXXFLAGS += -I$(MIDI_PATH)
 CXXFLAGS += -I$(DAISY_PATH)/Source  # Ensure DaisySP include path is correct
 
+# ncurses Paths
+LDFLAGS += -L/opt/homebrew/opt/ncurses/lib -lncurses
+CPPFLAGS += -I/opt/homebrew/opt/ncurses/include
+
+
 
 # DaisySP Paths
 DAISY_PATH := lib/DaisySP
@@ -36,8 +41,8 @@ TARGET := $(BIN_DIR)/my_synth
 SRC := $(wildcard $(SRC_DIR)/*.cpp)
 OBJ := $(patsubst $(SRC_DIR)/%.cpp, $(BUILD_DIR)/%.o, $(SRC))
 
-# Combined LDFLAGS
-LDFLAGS := $(LDFLAGS_DAISY) $(LDFLAGS_YAML) $(LDFLAGS_MIDI) $(LDFLAGS_AUDIO) $(LDFLAGS_MAC)
+# Combined LDFLAGS 
+LDFLAGS := $(LDFLAGS_DAISY) $(LDFLAGS_YAML) $(LDFLAGS_MIDI) $(LDFLAGS_AUDIO) $(LDFLAGS_MAC) -lncurses
 
 # Build rules
 all: $(TARGET)
