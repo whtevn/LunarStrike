@@ -21,12 +21,11 @@ CXXFLAGS += -I$(DAISY_PATH)/Source
 # OS-Specific Flags
 ifeq ($(UNAME_S), Darwin)  # macOS
   LDFLAGS += -framework CoreMIDI -framework CoreAudio -framework CoreFoundation
-  LDFLAGS += -lc++
   LDFLAGS += -L/usr/local/lib -L/opt/homebrew/lib -lportaudio -lportmidi
   LDFLAGS += -L/opt/homebrew/opt/ncurses/lib -lncurses
 
   CXXFLAGS += -I/usr/local/include -I/opt/homebrew/include
-  CPPFLAGS += -I/opt/homebrew/opt/ncurses/include
+  CXXFLAGS += -I/opt/homebrew/opt/ncurses/include
   CXXFLAGS += -DMACOS
 else  # Linux (Alpine)
   LDFLAGS += -lpthread
