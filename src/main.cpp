@@ -7,6 +7,9 @@
 #include "midi_handler.h"
 #include <unistd.h>
 #include <ncurses.h>
+#include <unordered_map>  // Fixes 'unordered_map' error
+#include <sys/time.h>     // Fixes 'struct timeval' error
+#include <sys/select.h>   // Fixes 'fd_set' error
 
 std::atomic<bool> running(true);
 

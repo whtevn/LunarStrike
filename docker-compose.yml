@@ -1,0 +1,11 @@
+services:
+  lunar-strike:
+    build:
+      context: .
+    working_dir: /app
+    command: ["/app/lunar-strike"]
+    environment:
+      - ALSA_CARD=0  
+    stdin_open: true  # Keep stdin open for interaction
+    tty: true         # Allocate a pseudo-TTY
+

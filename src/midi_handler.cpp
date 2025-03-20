@@ -4,6 +4,15 @@
 #include <thread>
 #include <chrono>
 
+#ifdef MACOS
+  #define MIDI_API RtMidi::Api::MACOSX_CORE  
+#else
+  #define MIDI_API RtMidi::Api::LINUX_ALSA  
+#endif
+
+RtMidiIn *midiin = nullptr;
+
+
 void MidiCallback(double deltatime, std::vector<unsigned char> *message, void *userData) {
     SynthEngine *synth = static_cast<SynthEngine *>(userData);
 
