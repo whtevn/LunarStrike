@@ -8,4 +8,6 @@ services:
       - ALSA_CARD=0  
     stdin_open: true  # Keep stdin open for interaction
     tty: true         # Allocate a pseudo-TTY
+    devices:
+      - "/dev/snd" 
 
