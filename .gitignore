@@ -24,3 +24,5 @@ output.wav
 # Ignore dependency build artifacts (DaisySP)
 lib/DaisySP/build/
 
+alsa.conf
+docker-compose.override.yml
