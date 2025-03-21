@@ -7,6 +7,7 @@ WORKDIR /build
 # Install dependencies needed for building
 RUN apk add --no-cache \
     clang \
+    cmake \
     gcc \
     g++ \
     cmake \
@@ -24,12 +25,8 @@ RUN apk add --no-cache \
 RUN git config --global --add safe.directory '*'
 
 # Copy source code and submodules
+COPY Makefile CMakeLists.txt ./
 COPY . .
-
-# Initialize and update submodules
-RUN git submodule update --init --recursive
-
-# Build the project
 RUN make clean-all && make build && make
 
 # **Stage 2: Create the final, minimal runtime container**

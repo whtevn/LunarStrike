@@ -35,7 +35,7 @@ void KeypressLoop(SynthEngine &synth)
             // 🎹 'J' key → Press triggers ON, Release triggers OFF
             if (ch == 'j' && keyStates.find(ch) == keyStates.end()) // First press only
             {
-                printw("J Key - Note On\n");
+                printw("J Key - Note On!\n");
                 refresh();
                 synth.OnNoteOn(60, 127); // Middle C
                 keyStates[ch] = true; // Mark key as held
