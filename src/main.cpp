@@ -1,4 +1,5 @@
 #include "RtMidi.h"
+#include "config_loader.h"
 #include "synth_engine.h"
 #include "portaudio_output.h"
 #include <iostream>
@@ -48,7 +49,7 @@ void KeypressLoop(SynthEngine &synth)
                 {
                     printw("K Key - Note On\n");
                     refresh();
-                    synth.OnNoteOn(60, 127);
+                    synth.OnNoteOn(40, 127);
                 }
                 else // Second press → OFF
                 {
@@ -133,9 +134,18 @@ void SetupMidi(SynthEngine &synth, RtMidiIn &midiIn)
 // Main Loop (Handles Audio, MIDI, and Key Input)
 int main(int argc, char *argv[])
 {
-    std::string config_file = (argc > 1) ? argv[1] : "config.yml";
     SynthEngine synth;
     synth.Init(44100.0f);
+
+    std::string config_file = (argc > 1) ? argv[1] : "config.yml";
+    ConfigLoader config(config_file);
+
+    synth.SetEnvelopeParameters(
+       config.GetADSR("attack"),
+       config.GetADSR("decay"),
+       config.GetADSR("sustain"),
+       config.GetADSR("release")
+   );
 
     RtMidiIn midiIn;
 
